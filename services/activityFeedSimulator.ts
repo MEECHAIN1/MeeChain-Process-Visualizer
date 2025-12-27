@@ -1,15 +1,16 @@
-import { LogEntryData, LogType } from '../types';
+import { LogEntryData, LogType, ActivityLog } from '../types';
 
 type LogUpdater = (entry: Omit<LogEntryData, 'timestamp'>) => void;
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 // Mock data based on the provided script
-const MOCK_LOGS = [
+const MOCK_LOGS: ActivityLog[] = [
     {
       id: '5',
       timestamp: new Date('2023-10-27T13:45:00Z').toISOString(),
       action: 'Refund processed for 10 T2P',
+      description: 'Automated refund triggered after 3 failed transaction replay attempts.',
       address: '0x1234...5678',
       details: { amount: 10 }
     },
@@ -17,6 +18,7 @@ const MOCK_LOGS = [
       id: '4',
       timestamp: new Date('2023-10-27T12:00:00Z').toISOString(),
       action: 'Claimed Contributor Badge',
+      description: 'Awarded for surpassing 50 successful supply chain verification milestones.',
       address: '0x9876...5432',
       details: { badgeId: 'B002' }
     },
@@ -24,6 +26,7 @@ const MOCK_LOGS = [
       id: '3',
       timestamp: new Date('2023-10-27T11:20:00Z').toISOString(),
       action: 'MeeBot mood changed to happy',
+      description: 'System-wide sentiment shift following positive community engagement metrics.',
       address: 'System',
       details: { mood: 'happy' }
     },
@@ -31,6 +34,7 @@ const MOCK_LOGS = [
       id: '2',
       timestamp: new Date('2023-10-27T10:05:00Z').toISOString(),
       action: 'Swapped 100 T2P for 50 MEE',
+      description: 'Internal utility swap to facilitate governance participation.',
       address: '0xABCD...EFGH',
       details: { amountIn: 100, amountOut: 50 }
     },
@@ -38,13 +42,14 @@ const MOCK_LOGS = [
       id: '1',
       timestamp: new Date('2023-10-27T10:00:00Z').toISOString(),
       action: 'Claimed Contributor Badge',
+      description: 'Genesis badge awarded to early network participants.',
       address: '0x1234...5678',
       details: { badgeId: 'B001' }
     },
 ];
 
 // Filtering function based on the provided script
-function filterLogsByContributor(logs: any[], address: string) {
+function filterLogsByContributor(logs: ActivityLog[], address: string) {
   if (!address) {
     return logs;
   }

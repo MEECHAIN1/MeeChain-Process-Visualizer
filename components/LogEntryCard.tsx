@@ -41,6 +41,9 @@ const LogEntryCard: React.FC<LogEntryCardProps> = ({ entry }) => {
       {getIcon(entry.type)}
       <div className="flex-grow">
         <h3 className="font-bold text-md text-gray-100">{entry.title}</h3>
+        {entry.description && (
+          <p className="mt-1 text-sm font-medium text-blue-300 italic">Note: {entry.description}</p>
+        )}
         {entry.details && (
           <div className="mt-1 text-sm text-gray-400">
             {Array.isArray(entry.details) 

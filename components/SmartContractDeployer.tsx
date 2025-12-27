@@ -1,6 +1,7 @@
+
 import React, { useState, useCallback } from 'react';
 import { runContractDeployer } from '../services/contractDeployerSimulator';
-import { LogEntryData } from '../types';
+import { LogEntryData, LogType } from '../types';
 import { CloudUploadIcon, RocketIcon } from './icons';
 
 interface SmartContractDeployerProps {
@@ -21,8 +22,9 @@ const SmartContractDeployer: React.FC<SmartContractDeployerProps> = ({ addLogEnt
       await runContractDeployer(addLogEntry, network, contract);
     } catch (error) {
       console.error("Deployment failed:", error);
+      // Fix: Use LogType.Error instead of 'error' string literal to match the LogType enum
        addLogEntry({
-        type: 'error',
+        type: LogType.Error,
         title: 'An unexpected error occurred during deployment simulation.',
       });
     } finally {

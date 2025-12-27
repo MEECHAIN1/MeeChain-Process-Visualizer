@@ -23,11 +23,13 @@ class RefundService {
     amount: string;
     status: 'pending' | 'success' | 'failed';
     reason: string;
+    description?: string;
   }): Promise<{ refundId: string }> {
     const refundId = `refund-${this.refundIdCounter++}`;
     this.log({
       type: LogType.Step,
       title: 'Logging Refund Action',
+      description: details.description,
       details: [
         `Refund ID: ${refundId}`,
         `User: ${details.userAddress}`,
@@ -52,11 +54,13 @@ class RefundService {
     userAddress: string,
     originalTxHash: string,
     amount: string,
-    retryAttempts: number
+    retryAttempts: number,
+    customNote?: string
   ): Promise<void> {
     this.log({
       type: LogType.Info,
       title: '🔄 Transaction Replay Failed',
+      description: customNote,
       details: [
         `User: ${userAddress.slice(0,10)}...`,
         `Original Tx: ${originalTxHash.slice(0,10)}...`,
@@ -73,6 +77,7 @@ class RefundService {
       amount,
       status: 'pending',
       reason: `Replay failed after ${retryAttempts} attempts`,
+      description: customNote
     });
 
     this.log({
@@ -120,13 +125,14 @@ class RefundService {
   }
 }
 
-export async function runDemo(logUpdater: LogUpdater) {
+export async function runDemo(logUpdater: LogUpdater, customNote?: string) {
   const log = logUpdater;
 
   log({
     type: LogType.Header,
     title: 'MeeChain Refund Contract Integration Demo',
-    details: 'Smart Contract + Logging Integration'
+    details: 'Smart Contract + Logging Integration',
+    description: customNote
   });
   await delay(1000);
 
@@ -145,7 +151,7 @@ export async function runDemo(logUpdater: LogUpdater) {
   const amount = '0.0083595';
   const retryAttempts = 3;
 
-  await refundService.handleReplayFailure(userAddress, originalTxHash, amount, retryAttempts);
+  await refundService.handleReplayFailure(userAddress, originalTxHash, amount, retryAttempts, customNote);
   await delay(1500);
 
   log({

@@ -8,6 +8,7 @@ const MOCK_LOGS = [
   {
     contributorId: "0xAbc1234567890123456789012345678901234567",
     action: "minted badge",
+    description: "User successfully claimed their 'Genesis' soulbound badge.",
     metadata: {
       badgeType: "Proof of Participation",
       event: "MeeChain Launch"
@@ -16,6 +17,7 @@ const MOCK_LOGS = [
   {
     contributorId: "0xDef4567890123456789012345678901234567890",
     action: "submitted proposal",
+    description: "New governance proposal created for dashboard improvements.",
     metadata: {
       proposalId: "proposal_001",
       notes: "Add a contributor leaderboard to the main dashboard."

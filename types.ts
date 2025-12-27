@@ -17,6 +17,7 @@ export interface LogEntryData {
   type: LogType;
   title: string;
   details?: string | string[];
+  description?: string;
   code?: string;
   timestamp: number;
 }
@@ -27,4 +28,20 @@ export interface ActivityLog {
   action: string;
   address: string;
   details: { [key: string]: any };
+  description?: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  address: string;
+  miningPower: number;
+  tokensMined: number;
+  lastActive: string;
+}
+
+export interface MiningState {
+  points: number;
+  level: number;
+  lastMined: number;
+  isSyncing: boolean;
 }
