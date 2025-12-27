@@ -1,0 +1,5 @@
+{
+  "name": "MeeChain Refund Process Visualizer",
+  "description": "A web application that provides a visual, step-by-step demonstration of the MeeChain smart contract refund process for failed transactions, translating the backend logic into an easy-to-understand user interface.",
+  "requestFramePermissions": []
+}
