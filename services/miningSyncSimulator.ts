@@ -1,152 +1,143 @@
 
-import { LogEntryData, LogType, MiningState } from '../types';
+import { LogEntryData, LogType, MiningState, SyncStatus } from '../types';
 
 type LogUpdater = (entry: Omit<LogEntryData, 'timestamp'>) => void;
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-const CLOUD_FUNCTION_CODE = `
-// mine.ts - Firebase Cloud Function
-export const mine = onCall(async (request) => {
-  const uid = request.auth.uid;
-  const userRef = db.collection('users').doc(uid);
-  
-  return await db.runTransaction(async (transaction) => {
-    const doc = await transaction.get(userRef);
-    const data = doc.data();
-    
-    const newPoints = (data.points || 0) + 10;
-    const newLevel = Math.floor(newPoints / 100) + 1;
-    
-    transaction.update(userRef, {
-      points: newPoints,
-      level: newLevel,
-      lastMined: Date.now()
-    });
-    
-    return { points: newPoints, level: newLevel };
-  });
-});
+const SMART_CONTRACT_CODE = `
+// MeeChainMining.sol
+// Ensuring on-chain persistence for cross-chain verifiability
+function recordMining(address user, uint256 amount) external onlyMeeBot {
+    userStats[user].points += amount;
+    userStats[user].lastMined = block.timestamp;
+    emit MiningRecorded(user, amount, block.timestamp);
+}
 `;
 
-const FIREBASE_LISTENER_CODE = `
-// Frontend - Real-time Sync
-useEffect(() => {
-  if (!user) return;
+const CLOUD_FUNCTION_CODE = `
+// mine.ts - Firebase Cloud Function (The Orchestrator)
+export const mine = onCall(async (request) => {
+  const { auth } = request;
+  const userRef = db.collection('users').doc(auth.uid);
   
-  const unsubscribe = onSnapshot(doc(db, "users", user.uid), (doc) => {
-    if (doc.exists()) {
-      const data = doc.data();
-      // Sync local state with Firestore
-      setMiningState({
-        points: data.points,
-        level: data.level,
-        lastMined: data.lastMined
-      });
-    }
+  // 1. Write to Firestore first (Source of Truth for Frontend)
+  // This triggers the real-time listener instantly for the user.
+  await db.runTransaction(async (tx) => {
+    const userDoc = await tx.get(userRef);
+    const newPoints = (userDoc.data().points || 0) + 25;
+    
+    tx.update(userRef, { 
+      points: newPoints, 
+      lastMined: Date.now(),
+      syncStatus: 'pending_on_chain' 
+    });
   });
-  
-  return () => unsubscribe();
-}, [user]);
+
+  // 2. Sync to Smart Contract (On-chain Security)
+  // This can happen asynchronously but is managed here for consistency.
+  try {
+    const txResponse = await miningContract.recordMining(auth.uid, 25);
+    await txResponse.wait(); // Wait for MeeChain block confirmation
+    
+    // 3. Update Firestore to 'synced' status
+    await userRef.update({ syncStatus: 'synced' });
+  } catch (e) {
+    // Retry logic would go here
+    await userRef.update({ syncStatus: 'retry_pending' });
+  }
+});
 `;
 
 export async function runMiningSyncDemo(
   logUpdater: LogUpdater, 
-  updateState: (s: Partial<MiningState>) => void
+  processEvent: (p: number, s: SyncStatus) => void
 ) {
   const log = logUpdater;
 
   log({
     type: LogType.Header,
-    title: 'Mining State Synchronization Flow',
-    details: 'Demonstrating real-time state updates across Firestore, Functions, and React Context.'
+    title: 'Atomic Mining Synchronization Protocol',
+    details: 'Demonstrating the secure bridge between Web2 (Firestore) and Web3 (MeeChain).'
   });
   await delay(1000);
-
-  log({
-    type: LogType.Scenario,
-    title: 'User initiates "Mine" action',
-    details: 'The frontend calls the secure "mine" Firebase Function.'
-  });
-  await delay(1200);
 
   log({
     type: LogType.Step,
-    title: '1. Invoking Cloud Function...',
-    code: 'const result = await httpsCallable(functions, "mine")();'
-  });
-  await delay(1500);
-
-  log({
-    type: LogType.Code,
-    title: '2. Backend logic processing (Transaction)',
-    details: 'Atomic update ensuring points and levels are synced.',
-    code: CLOUD_FUNCTION_CODE
-  });
-  await delay(2500);
-
-  log({
-    type: LogType.Success,
-    title: '✅ Transaction Committed to Firestore',
-    details: 'User document updated: points += 10'
-  });
-  await delay(1000);
-
-  log({
-    type: LogType.Event,
-    title: '📡 Firestore onSnapshot triggered!',
-    details: 'The real-time listener detects the document change.',
-    code: FIREBASE_LISTENER_CODE
-  });
-  await delay(1500);
-
-  log({
-    type: LogType.Step,
-    title: '3. Updating Frontend MeeBotContext...',
-    details: 'Dispatching state update to reflect new points and levels UI-wide.'
-  });
-  
-  // Simulate the actual state update
-  updateState({
-    points: 10,
-    level: 1,
-    lastMined: Date.now(),
-  });
-  
-  await delay(1000);
-  log({
-    type: LogType.Success,
-    title: '✅ Global State Synchronized',
-    details: 'Points: 10 | Level: 1 | UI updated real-time'
+    title: 'Phase 1: Transaction Initiation',
+    details: 'Frontend sends auth token and request to Firebase Cloud Functions.',
+    code: 'const response = await functions.httpsCallable("mine")();'
   });
   await delay(1500);
 
   log({
     type: LogType.Info,
-    title: '🔄 Continuous Sync Verification',
-    details: 'Performing a second mining cycle to demonstrate level progression.'
+    title: 'Phase 2: Cloud Function Orchestration',
+    details: 'Executing transaction to ensure data integrity across layers.',
+    code: CLOUD_FUNCTION_CODE
   });
-  await delay(1000);
+  await delay(2000);
+
+  log({
+    type: LogType.Success,
+    title: '✅ Step A: Firestore Document Updated',
+    details: 'Write operation successful. points: +25 | status: pending_on_chain'
+  });
+  await delay(800);
+
+  log({
+    type: LogType.Event,
+    title: '📡 Step B: Frontend Reacts via onSnapshot',
+    details: 'MeeBotContext receives the Firestore delta and updates local state instantly.',
+  });
+  
+  // Instant UI feedback simulation
+  processEvent(25, 'pending_on_chain');
+  
+  await delay(2000);
 
   log({
     type: LogType.Step,
-    title: 'Mining cycle #2 starting...'
+    title: 'Phase 3: Blockchain Settlement',
+    details: 'MeeBot-Admin relay node signs and broadcasts the mining payload to MeeChain.',
+    code: SMART_CONTRACT_CODE
   });
+  await delay(2500);
+
+  log({
+    type: LogType.Success,
+    title: '✅ Step C: On-Chain Block Confirmed',
+    details: 'Transaction 0xmeechain... confirmed. Emitting MiningRecorded event.'
+  });
+  await delay(1200);
+
+  log({
+    type: LogType.Success,
+    title: '✅ Step D: Final Status Sync',
+    details: 'Cloud Function updates Firestore syncStatus to "synced".'
+  });
+
+  // Final UI state update
+  processEvent(0, 'synced');
+
   await delay(1000);
 
-  updateState({
-    points: 105,
-    level: 2, // Level up logic triggered
-    lastMined: Date.now()
+  log({
+    type: LogType.State,
+    title: 'Consensus Verification State',
+    details: [
+      '• Firestore (Real-time): Points = +25 (MATCH)',
+      '• MeeChain (On-Chain): Points = +25 (MATCH)',
+      '• Frontend (Context): Points = +25 (MATCH)',
+    ]
   });
 
   log({
     type: LogType.Complete,
-    title: '🎉 Synchronization Successful!',
+    title: '🎉 Full Ecosystem Sync Verified!',
     details: [
-      '✅ Multi-layer sync complete.',
-      '✅ Firestore acts as the source of truth.',
-      '✅ React Context handles real-time UI propagation.',
-      '✅ Points and Levels are persistent and verified.'
+      '✅ 100% Data consistency between DB and Blockchain.',
+      '✅ Near-zero latency for user feedback via Firestore.',
+      '✅ Immutable proof of mining stored on MeeChain.',
     ]
   });
 }

@@ -39,9 +39,12 @@ export interface LeaderboardEntry {
   lastActive: string;
 }
 
+export type SyncStatus = 'idle' | 'pending_on_chain' | 'synced';
+
 export interface MiningState {
   points: number;
   level: number;
   lastMined: number;
   isSyncing: boolean;
+  syncStatus: SyncStatus;
 }
