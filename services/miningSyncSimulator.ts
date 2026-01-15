@@ -6,7 +6,7 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const SMART_CONTRACT_CODE = `
 // MeeChainMining.sol
-// Ensuring on-chain persistence for cross-chain verifiability
+Ensuring on-chain persistence for cross-chain verifiability
 function recordMining(address user, uint256 amount) external onlyMeeBot {
     userStats[user].points += amount;
     userStats[user].lastMined = block.timestamp;
