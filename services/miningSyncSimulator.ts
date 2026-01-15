@@ -42,7 +42,7 @@ export const mine = onCall(async (request) => {
     // 3. Update Firestore to 'synced' status
     await userRef.update({ syncStatus: 'synced' });
   } catch (e) {
-    // Retry logic would go here
+    Retry logic would go here
     await userRef.update({ syncStatus: 'retry_pending' });
   }
 });
