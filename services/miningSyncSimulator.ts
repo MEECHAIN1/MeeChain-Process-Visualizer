@@ -5,7 +5,7 @@ type LogUpdater = (entry: Omit<LogEntryData, 'timestamp'>) => void;
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const SMART_CONTRACT_CODE = `
-// MeeChainMining.sol
+ MeeChainMining.sol
 Ensuring on-chain persistence for cross-chain verifiability
 function recordMining(address user, uint256 amount) external onlyMeeBot {
     userStats[user].points += amount;
